@@ -1,5 +1,4 @@
 import { fetchTokenTransfers } from '@/lib/utils/api/alchemy'
-import {} from '@indexcoop/flash-mint-sdk'
 import { useQuery } from '@tanstack/react-query'
 import { Address } from 'viem'
 import { useAccount } from 'wagmi'

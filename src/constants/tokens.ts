@@ -636,5 +636,3 @@ export const WSTETH: Token = {
   isDangerous: false,
   indexTypes: [],
 }
-
-

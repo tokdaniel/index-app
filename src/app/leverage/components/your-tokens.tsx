@@ -31,7 +31,6 @@ export function YourTokens() {
     isMinting,
     toggleIsMinting,
     onSelectLeverageType,
-
     indexTokens,
   } = useLeverageToken()
   const [tokens, setTokens] = useState<EnrichedToken[]>([])
@@ -44,8 +43,6 @@ export function YourTokens() {
   const tokenHistory = useTokenHistory(
     ...indexTokens.map((token) => token.arbitrumAddress as Address),
   )
-
-  const x = useMemo(() => {}, [])
 
   const handleCloseClick = (token: EnrichedToken) => {
     if (isMinting) toggleIsMinting()
