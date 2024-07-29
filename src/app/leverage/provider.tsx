@@ -43,6 +43,14 @@ import { BaseTokenStats } from './types'
 
 const baseTokens = [ETH, BTC]
 const currencyTokens = [ETH, WETH, WBTC, USDC, USDT]
+const indexTokens = [
+  IndexCoopInverseEthereumIndex,
+  IndexCoopEthereum2xIndex,
+  IndexCoopEthereum3xIndex,
+  IndexCoopInverseBitcoinIndex,
+  IndexCoopBitcoin2xIndex,
+  IndexCoopBitcoin3xIndex,
+]
 
 export enum LeverageType {
   Long2x,
@@ -61,6 +69,7 @@ export interface TokenContext {
   inputTokenAmount: bigint
   baseTokens: Token[]
   currencyTokens: Token[]
+  indexTokens: Token[]
   costOfCarry: number | null
   inputTokens: Token[]
   outputTokens: Token[]
@@ -88,6 +97,7 @@ export const LeverageTokenContext = createContext<TokenContext>({
   inputTokenAmount: BigInt(0),
   baseTokens,
   currencyTokens,
+  indexTokens,
   costOfCarry: null,
   inputTokens: [],
   outputTokens: [],
@@ -179,20 +189,11 @@ export function LeverageProvider(props: { children: any }) {
     }
   }, [baseToken, leverageType])
 
-  const indexTokensBasedOnSymbol = useMemo(() => {
-    if (baseToken.symbol === 'ETH') {
-      return [
-        IndexCoopInverseEthereumIndex,
-        IndexCoopEthereum2xIndex,
-        IndexCoopEthereum3xIndex,
-      ]
-    }
-    return [
-      IndexCoopInverseBitcoinIndex,
-      IndexCoopBitcoin2xIndex,
-      IndexCoopBitcoin3xIndex,
-    ]
-  }, [baseToken])
+  const indexTokensBasedOnSymbol = useMemo(
+    () =>
+      indexTokens.filter((token) => token.symbol.includes(baseToken.symbol)),
+    [baseToken],
+  )
 
   const inputTokenAmount = useMemo(
     () =>
@@ -399,6 +400,7 @@ export function LeverageProvider(props: { children: any }) {
         baseTokens,
         costOfCarry,
         currencyTokens,
+        indexTokens,
         inputTokens,
         outputTokens,
         isFetchingQuote,

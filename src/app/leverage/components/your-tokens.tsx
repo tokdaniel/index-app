@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import { useTokenHistory } from '@/lib/hooks/use-token-history'
+import { shortenAddress } from '@/lib/utils'
+import { Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react'
+import { Address, zeroAddress } from 'viem'
 import { LeverageType, useLeverageToken } from '../provider'
 import { EnrichedToken } from '../types'
 import { fetchLeverageTokenPrices } from '../utils/fetch-leverage-token-prices'
@@ -14,6 +18,12 @@ const leverageTypeLabels = {
   [LeverageType.Short]: '1x SHORT',
 }
 
+const getLeverageAction = (from: Address) => {
+  if (from === zeroAddress) return 'Open'
+
+  return 'Close'
+}
+
 export function YourTokens() {
   const {
     balances,
@@ -21,6 +31,8 @@ export function YourTokens() {
     isMinting,
     toggleIsMinting,
     onSelectLeverageType,
+
+    indexTokens,
   } = useLeverageToken()
   const [tokens, setTokens] = useState<EnrichedToken[]>([])
 
@@ -28,6 +40,12 @@ export function YourTokens() {
     if (balances.length === 0) return
     fetchLeverageTokenPrices(balances, setTokens)
   }, [balances])
+
+  const tokenHistory = useTokenHistory(
+    ...indexTokens.map((token) => token.arbitrumAddress as Address),
+  )
+
+  const x = useMemo(() => {}, [])
 
   const handleCloseClick = (token: EnrichedToken) => {
     if (isMinting) toggleIsMinting()
@@ -49,70 +67,166 @@ export function YourTokens() {
     }
   }
 
+  const indexTokensBySymbol = useMemo(
+    () =>
+      tokens.reduce<Record<string, EnrichedToken>>(
+        (acc, token) => ({
+          ...acc,
+          [token.symbol]: token,
+        }),
+        {},
+      ),
+    [tokens],
+  )
+
   return (
-    <div className='border-ic-gray-600 w-full rounded-3xl border bg-[#1C2C2E] lg:max-w-[67%]'>
-      <h3 className='text-ic-white p-6 font-bold'>Your Tokens</h3>
-      <div className='border-ic-gray-600 flex w-full border-b px-6 pb-3'>
-        <div className='text-ic-gray-400 w-1/2 sm:w-1/3 md:w-3/12'>Token</div>
-        <div className='text-ic-gray-400 w-1/2 sm:w-1/3 md:w-4/12'>
-          USD Value
-        </div>
-        <div className='text-ic-gray-400 hidden md:block md:w-3/12'>
-          Current Leverage
-        </div>
-        <div className='hidden sm:block sm:w-1/3 md:w-2/12'>
-          <span className='sr-only'>Close column</span>
-        </div>
-      </div>
-      <div className='divide-ic-gray-900/20 divide-y-4 py-2'>
-        {tokens.length === 0 ? (
-          <div className='text-ic-white px-2 py-4 text-center'>
-            You are currently not holding any Leverage Suite tokens
-          </div>
-        ) : (
-          tokens.map((token) => (
-            <div
-              key={token.symbol}
-              className='text-ic-white flex h-14 w-full px-6'
-            >
-              <div className='flex w-1/2 sm:w-1/3 md:w-3/12'>
-                <div className='my-auto mr-2 overflow-hidden rounded-full'>
-                  <Image
-                    src={token.image}
-                    alt={`${token.symbol} logo`}
-                    height={30}
-                    width={30}
-                  />
-                </div>
-                <div className='my-auto font-medium'>{token.symbol}</div>
-              </div>
-              <div className='flex w-1/2 items-center sm:w-1/3 md:w-4/12'>
-                {token.size}
-              </div>
-              <div
-                className={clsx(
-                  'hidden items-center font-medium md:flex md:w-3/12',
-                  {
-                    'text-ic-blue-700':
-                      token.leverageType !== LeverageType.Short,
-                    'text-ic-red': token.leverageType === LeverageType.Short,
-                  },
-                )}
-              >
-                {leverageTypeLabels[token.leverageType!]}
-              </div>
-              <div className='hidden sm:flex sm:w-1/3 md:w-2/12'>
-                <button
-                  className='bg-ic-blue-500 active:bg-ic-blue-700 disabled:bg-ic-gray-300 hover:bg-ic-blue-400 text-ic-white mb-2 ml-auto mt-auto h-9 w-fit rounded-md px-[14px] py-[4px] align-bottom shadow-sm'
-                  onClick={() => handleCloseClick(token)}
-                >
-                  Close
-                </button>
-              </div>
+    <Tabs
+      className='border-ic-gray-600 w-full rounded-3xl border bg-[#1C2C2E] lg:max-w-[67%]'
+      variant='unstyled'
+    >
+      <TabList>
+        <Tab className='aria-selected:text-ic-white text-gray-400'>
+          <h3 className='p-6 font-bold'>Open Positions</h3>
+        </Tab>
+        <Tab className='aria-selected:text-ic-white text-gray-400'>
+          <h3 className='p-6 font-bold'>History</h3>
+        </Tab>
+      </TabList>
+
+      <TabPanels>
+        <TabPanel>
+          <div className='border-ic-gray-600 flex w-full border-b px-6 pb-3'>
+            <div className='text-ic-gray-400 w-1/2 sm:w-1/3 md:w-3/12'>
+              Token
             </div>
-          ))
-        )}
-      </div>
-    </div>
+            <div className='text-ic-gray-400 w-1/2 sm:w-1/3 md:w-4/12'>
+              USD Value
+            </div>
+            <div className='text-ic-gray-400 hidden md:block md:w-3/12'>
+              Current Leverage
+            </div>
+            <div className='hidden sm:block sm:w-1/3 md:w-2/12'>
+              <span className='sr-only'>Close column</span>
+            </div>
+          </div>
+          <div className='divide-ic-gray-900/20 divide-y-4 py-2'>
+            {tokens.length === 0 ? (
+              <div className='text-ic-white px-2 py-4 text-center'>
+                You are currently not holding any Leverage Suite tokens
+              </div>
+            ) : (
+              tokens.map((token) => (
+                <div
+                  key={token.symbol}
+                  className='text-ic-white flex h-14 w-full px-6'
+                >
+                  <div className='flex w-1/2 sm:w-1/3 md:w-3/12'>
+                    <div className='my-auto mr-2 overflow-hidden rounded-full'>
+                      <Image
+                        src={token.image}
+                        alt={`${token.symbol} logo`}
+                        height={30}
+                        width={30}
+                      />
+                    </div>
+                    <div className='my-auto font-medium'>{token.symbol}</div>
+                  </div>
+                  <div className='flex w-1/2 items-center sm:w-1/3 md:w-4/12'>
+                    {token.size}
+                  </div>
+                  <div
+                    className={clsx(
+                      'hidden items-center font-medium md:flex md:w-3/12',
+                      {
+                        'text-ic-blue-700':
+                          token.leverageType !== LeverageType.Short,
+                        'text-ic-red':
+                          token.leverageType === LeverageType.Short,
+                      },
+                    )}
+                  >
+                    {leverageTypeLabels[token.leverageType!]}
+                  </div>
+                  <div className='hidden sm:flex sm:w-1/3 md:w-2/12'>
+                    <button
+                      className='bg-ic-blue-500 active:bg-ic-blue-700 disabled:bg-ic-gray-300 hover:bg-ic-blue-400 text-ic-white mb-2 ml-auto mt-auto h-9 w-fit rounded-md px-[14px] py-[4px] align-bottom shadow-sm'
+                      onClick={() => handleCloseClick(token)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </TabPanel>
+        <TabPanel>
+          <div className='border-ic-gray-600 flex w-full border-b px-6 pb-3'>
+            <div className='text-ic-gray-400 w-1/3 md:w-2/12'>Date</div>
+            <div className='text-ic-gray-400 w-1/3 text-center sm:text-left md:w-2/12'>
+              Action
+            </div>
+            <div className='text-ic-gray-400 hidden md:block md:w-2/12'>
+              Size
+            </div>
+            <div className='text-ic-gray-400 w-1/3 md:w-2/12'>Position</div>
+            <div className='text-ic-gray-400 hidden md:block md:w-4/12'>Tx</div>
+          </div>
+          <div className='divide-ic-gray-900/20 divide-y-4 py-2'>
+            {tokenHistory.length === 0 ? (
+              <div className='text-ic-white px-2 py-4 text-center'>
+                You have not executed any transactions with leverage tokens yet.
+              </div>
+            ) : (
+              tokenHistory.map(({ metadata, from, hash, asset, value }) => {
+                const token = indexTokensBySymbol[asset!]
+                const at = new Date(metadata.blockTimestamp)
+
+                if (!token) return null
+
+                return (
+                  <div
+                    key={hash}
+                    className='text-ic-white flex h-14 w-full px-6'
+                  >
+                    <div className='flex w-1/3 md:w-2/12'>
+                      <div className='my-auto font-medium'>
+                        {at.toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className='flex w-1/3 justify-center sm:justify-normal md:w-2/12'>
+                      <div className='my-auto font-medium'>
+                        {getLeverageAction(from as Address)}
+                      </div>
+                    </div>
+                    <div className='hidden w-1/3 items-center md:flex md:w-2/12'>
+                      $
+                      {(
+                        Number(value) * (token.unitPriceUsd ?? 0)
+                      ).toLocaleString()}
+                    </div>
+                    <div className='flex w-1/3 md:w-2/12'>
+                      <div className='my-auto font-medium'>{token.symbol}</div>
+                    </div>
+
+                    <div className='hidden w-1/3 items-center md:flex md:w-4/12'>
+                      <a
+                        href={`https://arbiscan.io/tx/${hash}`}
+                        className='hover:underline'
+                        target='_blank'
+                      >
+                        <div className='my-auto font-mono'>
+                          {shortenAddress(hash)}
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   )
 }

@@ -1,5 +1,6 @@
 import { Token } from '@/constants/tokens'
 
+import { TransactionReceipt } from 'viem'
 import { LeverageType } from './provider'
 
 export interface BaseTokenStats {
@@ -13,6 +14,13 @@ export interface BaseTokenStats {
 export type EnrichedToken = Token & {
   balance: bigint
   usd?: number
+  unitPriceUsd?: number
   size?: string
   leverageType?: LeverageType | null
+}
+
+
+export type EtherScanResponse = {
+  message: string
+  result: (TransactionReceipt & { timestamp: `${number}`})[]
 }

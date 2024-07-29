@@ -1,6 +1,6 @@
 import {
   IndexCoopMainnetTokens,
-  getIndexTokenData,
+  getIndexTokenData
 } from '@indexcoop/tokenlists'
 
 import {
@@ -636,3 +636,5 @@ export const WSTETH: Token = {
   isDangerous: false,
   indexTypes: [],
 }
+
+
