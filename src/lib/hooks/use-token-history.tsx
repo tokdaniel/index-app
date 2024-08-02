@@ -11,7 +11,12 @@ export const useTokenHistory = (...tokens: Address[]) => {
     enabled: Boolean(user && chainId),
     queryKey: ['token-history'],
     queryFn: () => fetchTokenTransfers(user, tokens, chainId),
-    select: (data) => data,
+    select: (data) =>
+      data?.sort(
+        (a, b) =>
+          new Date(b.metadata.blockTimestamp).getTime() -
+          new Date(a.metadata.blockTimestamp).getTime(),
+      ),
   })
 
   return tokenHistory
